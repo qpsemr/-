@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "510681806929",
+    "project_id": "guardapp-ab846",
+    "storage_bucket": "guardapp-ab846.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510681806929:android:b23fe86fd1e7f66bf16070",
+        "android_client_info": {
+          "package_name": "com.example.GuardApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnyONjydC18PqSnMRIhcRPf5mcF3w1MjM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510681806929:android:4f5ca806121625c5f16070",
+        "android_client_info": {
+          "package_name": "com.example.guardapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnyONjydC18PqSnMRIhcRPf5mcF3w1MjM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510681806929:android:306a5012c8837073f16070",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnyONjydC18PqSnMRIhcRPf5mcF3w1MjM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
