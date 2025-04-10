@@ -1,6 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/intl.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -11,125 +12,219 @@ void main() async {
   runApp(MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
-  final db = FirebaseFirestore.instance;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Firebase Test',
-      home: Scaffold(
-        appBar: AppBar(title: Text('Firebase 연동 테스트')),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () async {
-              try {
-                await db.collection('testCollection').add({
-                  'message': 'Firebase 연결 성공!',
-                  'timestamp': Timestamp.now(),
-                });
-                print('✅ Firestore에 데이터 전송 성공');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('연동 성공! 데이터 전송 완료')),
-                );
-              } catch (e) {
-                print('❌ Firestore 오류: $e');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('연동 실패: $e')),
-                );
-              }
-            },
-            child: Text('Firestore에 테스트 데이터 보내기'),
-          ),
-        ),
-      ),
+      title: '냉장고 식재료 앱',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: FridgePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class FridgePage extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<FridgePage> createState() => _FridgePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _FridgePageState extends State<FridgePage> {
+  String _sortField = 'day';
+  bool _descending = true;
 
-  void _incrementCounter() {
+  void _changeSort(String field) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      if (_sortField == field) {
+        _descending = !_descending;
+      } else {
+        _sortField = field;
+        _descending = true;
+      }
     });
+  }
+
+  void _showAddOrEditDialog({DocumentSnapshot? doc}) {
+    final isEdit = doc != null;
+    final TextEditingController nameController =
+    TextEditingController(text: doc?['name'] ?? '');
+    final TextEditingController countController =
+    TextEditingController(text: doc?['count']?.toString() ?? '');
+    String selectedLocation = doc?['location'] ?? '냉장실';
+    DateTime selectedDate = DateTime.tryParse(doc?['day'] ?? '') ?? DateTime.now();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(isEdit ? '식재료 수정' : '식재료 추가'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(labelText: '식재료 이름'),
+                ),
+                TextField(
+                  controller: countController,
+                  decoration: InputDecoration(labelText: '수량'),
+                  keyboardType: TextInputType.number,
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedLocation,
+                  items: ['냉장실', '냉동실']
+                      .map((label) => DropdownMenuItem(
+                    child: Text(label),
+                    value: label,
+                  ))
+                      .toList(),
+                  onChanged: (value) {
+                    selectedLocation = value!;
+                  },
+                  decoration: InputDecoration(labelText: '보관 장소'),
+                ),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '날짜: ${DateFormat('yyyy-MM-dd').format(selectedDate)}',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                      child: Text('날짜 선택'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                final count = int.tryParse(countController.text.trim()) ?? 0;
+                final formattedDay =
+                DateFormat("yyyy-MM-dd").format(selectedDate);
+
+                if (name.isNotEmpty) {
+                  if (isEdit) {
+                    await FirebaseFirestore.instance
+                        .collection('fridge_items')
+                        .doc(doc!.id)
+                        .update({
+                      'name': name,
+                      'count': count,
+                      'location': selectedLocation,
+                      'day': formattedDay,
+                    });
+                  } else {
+                    await FirebaseFirestore.instance
+                        .collection('fridge_items')
+                        .add({
+                      'name': name,
+                      'count': count,
+                      'location': selectedLocation,
+                      'day': formattedDay,
+                    });
+                  }
+                  Navigator.pop(context);
+                }
+              },
+              child: Text(isEdit ? '수정' : '추가'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildItemList(List<QueryDocumentSnapshot> docs, String location) {
+    final filtered = docs
+        .where((doc) => doc['location'] == location)
+        .toList();
+
+    if (filtered.isEmpty) return SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Text(
+            location,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        ...filtered.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return ListTile(
+            title: Text(data['name'] ?? '이름 없음'),
+            subtitle: Text(
+              '수량: ${data['count']}, 날짜: ${data['day']}',
+            ),
+            onTap: () => _showAddOrEditDialog(doc: doc),
+          );
+        }).toList(),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('냉장고 식재료 관리'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: _changeSort,
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'name', child: Text('이름순')),
+              PopupMenuItem(value: 'day', child: Text('날짜순')),
+            ],
+          )
+        ],
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('fridge_items')
+            .orderBy(_sortField, descending: _descending)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data!.docs;
+
+          return ListView(
+            children: [
+              _buildItemList(docs, '냉장실'),
+              _buildItemList(docs, '냉동실'),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        onPressed: () => _showAddOrEditDialog(),
+        child: Icon(Icons.add),
+      ),
     );
   }
 }

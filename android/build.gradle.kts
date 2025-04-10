@@ -19,3 +19,6 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+plugins {
+    kotlin("android") version "1.8.22" apply false
+}
