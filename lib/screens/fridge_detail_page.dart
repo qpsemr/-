@@ -45,7 +45,7 @@ class _FridgeDetailPageState extends State<FridgeDetailPage>
     super.dispose();
   }
 
-  void _onBottomTapped(int index) {
+  /*void _onBottomTapped(int index) {
     if (index == 1) {
       Navigator.push(
         context,
@@ -54,7 +54,20 @@ class _FridgeDetailPageState extends State<FridgeDetailPage>
     } else {
       setState(() => _selectedBottomIndex = index);
     }
+  }*/
+  void _onBottomTapped(int index) {
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RecipePage(fridgeId: widget.fridgeId),
+        ),
+      );
+    } else {
+      setState(() => _selectedBottomIndex = index);
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {

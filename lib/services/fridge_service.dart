@@ -34,4 +34,21 @@ class FridgeService {
       }
     }).length;
   }
+
+  Future<List<Map<String, dynamic>>> getFridgeItems(String fridgeId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('fridges')
+        .doc(fridgeId)
+        .collection('fridge_items')
+        .get();
+
+    return snapshot.docs.map((doc) => doc.data()).toList();
+  }
+
 }
+
+
+
+
